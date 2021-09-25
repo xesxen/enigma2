@@ -1573,7 +1573,7 @@ int handleEvent(eServiceEvent *ptr, ePyObject dest_list, const char* argstring, 
 				Py_DECREF(nowTime);
 			Py_DECREF(convertFuncArgs);
 			Py_DECREF(dest_list);
-			PyErr_SetString(PyExc_StandardError,
+			PyErr_SetString(PyExc_RuntimeError,
 				"error in convertFunc execute");
 			eDebug("[eEPGCache] handleEvent: error in convertFunc execute");
 			return -1;
@@ -1628,7 +1628,7 @@ PyObject *eEPGCache::lookupEvent(ePyObject list, ePyObject convertFunc)
 	const char *argstring=NULL;
 	if (!PyList_Check(list))
 	{
-		PyErr_SetString(PyExc_StandardError,
+		PyErr_SetString(PyExc_TypeError,
 			"type error");
 		eDebug("[eEPGCache] no list");
 		return NULL;
@@ -1637,7 +1637,7 @@ PyObject *eEPGCache::lookupEvent(ePyObject list, ePyObject convertFunc)
 	int listSize=PyList_Size(list);
 	if (!listSize)
 	{
-		PyErr_SetString(PyExc_StandardError,
+		PyErr_SetString(PyExc_ValueError,
 			"no params given");
 		eDebug("[eEPGCache] no params given");
 		return NULL;
@@ -1645,9 +1645,9 @@ PyObject *eEPGCache::lookupEvent(ePyObject list, ePyObject convertFunc)
 	else
 	{
 		ePyObject argv=PyList_GET_ITEM(list, 0); // borrowed reference!
-		if (PyString_Check(argv))
+		if (PyUnicode_Check(argv) && PyUnicode_READY(argv) == 0 && PyUnicode_KIND(argv) == PyUnicode_1BYTE_KIND)
 		{
-			argstring = PyString_AS_STRING(argv);
+			argstring = static_cast<const char*>(PyUnicode_DATA(argv));
 			++listIt;
 		}
 		else
@@ -1664,7 +1664,7 @@ PyObject *eEPGCache::lookupEvent(ePyObject list, ePyObject convertFunc)
 	{
 		if (!PyCallable_Check(convertFunc))
 		{
-			PyErr_SetString(PyExc_StandardError,
+			PyErr_SetString(PyExc_TypeError,
 				"convertFunc must be callable");
 			eDebug("[eEPGCache] convertFunc is not callable");
 			return NULL;
@@ -1700,7 +1700,7 @@ PyObject *eEPGCache::lookupEvent(ePyObject list, ePyObject convertFunc)
 				{
 					case 0:
 					{
-						if (!PyString_Check(entry))
+						if (!PyUnicode_Check(entry))
 						{
 							eDebug("[eEPGCache] tuple entry 0 is no a string");
 							goto skip_entry;
@@ -1709,7 +1709,7 @@ PyObject *eEPGCache::lookupEvent(ePyObject list, ePyObject convertFunc)
 						break;
 					}
 					case 1:
-						type=PyInt_AsLong(entry);
+						type=PyLong_AsLong(entry);
 						if (type < -1 || type > 2)
 						{
 							eDebug("[eEPGCache] unknown type %d", type);
@@ -1717,10 +1717,10 @@ PyObject *eEPGCache::lookupEvent(ePyObject list, ePyObject convertFunc)
 						}
 						break;
 					case 2:
-						event_id=stime=PyInt_AsLong(entry);
+						event_id=stime=PyLong_AsLong(entry);
 						break;
 					case 3:
-						minutes=PyInt_AsLong(entry);
+						minutes=PyLong_AsLong(entry);
 						break;
 					default:
 						eDebug("[eEPGCache] unneeded extra argument");
@@ -1731,7 +1731,7 @@ PyObject *eEPGCache::lookupEvent(ePyObject list, ePyObject convertFunc)
 			if (minutes && stime == -1)
 				stime = ::time(0);
 
-			eServiceReference ref(handleGroup(eServiceReference(PyString_AS_STRING(service))));
+			eServiceReference ref(handleGroup(eServiceReference(static_cast<const char*>(PyUnicode_DATA(service)))));
 			// redirect subservice querys to parent service
 			eServiceReferenceDVB &dvb_ref = (eServiceReferenceDVB&)ref;
 			if (dvb_ref.getParentTransportStreamID().get()) // linkage subservice
@@ -2048,10 +2048,10 @@ unsigned int eEPGCache::getEpgSources()
 
 static const char* getStringFromPython(ePyObject obj)
 {
-	char *result = 0;
-	if (PyString_Check(obj))
+	const char *result = nullptr;
+	if (PyUnicode_Check(obj))
 	{
-		result = PyString_AS_STRING(obj);
+		result = static_cast<const char*>(PyUnicode_DATA(obj));
 	}
 	return result;
 }
@@ -2073,10 +2073,9 @@ void eEPGCache::importEvents(ePyObject serviceReferences, ePyObject list)
 {
 	std::vector<eServiceReferenceDVB> refs;
 
-	if (PyString_Check(serviceReferences))
+	if (PyUnicode_Check(serviceReferences))
 	{
-		char *refstr;
-		refstr = PyString_AS_STRING(serviceReferences);
+		const char *refstr = static_cast<const char*>(PyUnicode_DATA(serviceReferences));
 	        if (!refstr)
 	        {
 			eDebug("[eEPGCache:import] serviceReference string is 0, aborting");
@@ -2090,8 +2089,7 @@ void eEPGCache::importEvents(ePyObject serviceReferences, ePyObject list)
 		for (int i = 0; i < nRefs; ++i)
 		{
 			PyObject* item = PyList_GET_ITEM(serviceReferences, i);
-			char *refstr;
-	                refstr = PyString_AS_STRING(item);
+			const char *refstr = static_cast<const char*>(PyUnicode_DATA(item));
 	                if (!refstr)
         	        {
 				eDebug("[eEPGCache:import] a serviceref item is not a string");
@@ -2134,11 +2132,11 @@ void eEPGCache::importEvents(ePyObject serviceReferences, ePyObject list)
 		}
 
 		long start = PyLong_AsLong(PyTuple_GET_ITEM(singleEvent, 0));
-		long duration = PyInt_AsLong(PyTuple_GET_ITEM(singleEvent, 1));
+		long duration = PyLong_AsLong(PyTuple_GET_ITEM(singleEvent, 1));
 		const char *title = getStringFromPython(PyTuple_GET_ITEM(singleEvent, 2));
 		const char *short_summary = getStringFromPython(PyTuple_GET_ITEM(singleEvent, 3));
 		const char *long_description = getStringFromPython(PyTuple_GET_ITEM(singleEvent, 4));
-		char event_type = (char) PyInt_AsLong(PyTuple_GET_ITEM(singleEvent, 5));
+		char event_type = (char) PyLong_AsLong(PyTuple_GET_ITEM(singleEvent, 5));
 
 		Py_BEGIN_ALLOW_THREADS;
 		submitEventData(refs, start, duration, title, short_summary, long_description, event_type);
@@ -2188,8 +2186,8 @@ PyObject *eEPGCache::search(ePyObject arg)
 	ePyObject ret;
 	std::deque<uint32_t> descr;
 	int eventid = -1;
-	const char *argstring=0;
-	char *refstr=0;
+	const char *argstring=nullptr;
+	const char *refstr=nullptr;
 	int argcount=0;
 	int querytype=-1;
 	bool needServiceEvent=false;
@@ -2203,14 +2201,14 @@ PyObject *eEPGCache::search(ePyObject arg)
 		if (tuplesize > 0)
 		{
 			ePyObject obj = PyTuple_GET_ITEM(arg,0);
-			if (PyString_Check(obj))
+			if (PyUnicode_Check(obj))
 			{
 #if PY_VERSION_HEX < 0x02060000
 				argcount = PyString_GET_SIZE(obj);
 #else
-				argcount = PyString_Size(obj);
+				argcount = PyUnicode_GET_LENGTH(obj);
 #endif
-				argstring = PyString_AS_STRING(obj);
+				argstring = static_cast<const char*>(PyUnicode_DATA(obj));
 				for (int i=0; i < argcount; ++i)
 					switch(argstring[i])
 					{
@@ -2236,7 +2234,7 @@ PyObject *eEPGCache::search(ePyObject arg)
 			}
 			else
 			{
-				PyErr_SetString(PyExc_StandardError,
+				PyErr_SetString(PyExc_TypeError,
 					"type error");
 				eDebug("[eEPGCache] tuple arg 0 is not a string");
 				return NULL;
@@ -2250,9 +2248,9 @@ PyObject *eEPGCache::search(ePyObject arg)
 			if (tuplesize > 4 && querytype == 0)
 			{
 				ePyObject obj = PyTuple_GET_ITEM(arg, 3);
-				if (PyString_Check(obj))
+				if (PyUnicode_Check(obj))
 				{
-					refstr = PyString_AS_STRING(obj);
+					refstr = static_cast<const char*>(PyUnicode_DATA(obj));
 					eServiceReferenceDVB ref(refstr);
 					if (ref.valid())
 					{
@@ -2287,14 +2285,14 @@ PyObject *eEPGCache::search(ePyObject arg)
 					}
 					else
 					{
-						PyErr_SetString(PyExc_StandardError, "type error");
+						PyErr_SetString(PyExc_ValueError, "type error");
 						eDebug("[eEPGCache] tuple arg 4 is not a valid service reference string");
 						return NULL;
 					}
 				}
 				else
 				{
-					PyErr_SetString(PyExc_StandardError, "type error");
+					PyErr_SetString(PyExc_TypeError, "type error");
 					eDebug("[eEPGCache] tuple arg 4 is not a string");
 					return NULL;
 				}
@@ -2302,14 +2300,14 @@ PyObject *eEPGCache::search(ePyObject arg)
 			else if (tuplesize > 4 && (querytype > 0) )
 			{
 				ePyObject obj = PyTuple_GET_ITEM(arg, 3);
-				if (PyString_Check(obj))
+				if (PyUnicode_Check(obj))
 				{
 					int casetype = PyLong_AsLong(PyTuple_GET_ITEM(arg, 4));
-					const char *str = PyString_AS_STRING(obj);
+					const char *str = static_cast<const char*>(PyUnicode_DATA(obj));
 #if PY_VERSION_HEX < 0x02060000
 					int strlen = PyString_GET_SIZE(obj);
 #else
-					int strlen = PyString_Size(obj);
+					int strlen = PyUnicode_GET_LENGTH(obj);
 #endif
 					switch (querytype)
 					{
@@ -2439,7 +2437,7 @@ PyObject *eEPGCache::search(ePyObject arg)
 				}
 				else
 				{
-					PyErr_SetString(PyExc_StandardError,
+					PyErr_SetString(PyExc_TypeError,
 						"type error");
 					eDebug("[eEPGCache] tuple arg 4 is not a string");
 					return NULL;
@@ -2447,7 +2445,7 @@ PyObject *eEPGCache::search(ePyObject arg)
 			}
 			else
 			{
-				PyErr_SetString(PyExc_StandardError,
+				PyErr_SetString(PyExc_ValueError,
 					"type error");
 				eDebug("[eEPGCache] tuple arg 3(%d) is not a known querytype(0..3)", querytype);
 				return NULL;
@@ -2455,7 +2453,7 @@ PyObject *eEPGCache::search(ePyObject arg)
 		}
 		else
 		{
-			PyErr_SetString(PyExc_StandardError,
+			PyErr_SetString(PyExc_ValueError,
 				"type error");
 			eDebug("[eEPGCache] not enough args in tuple");
 			return NULL;
@@ -2463,7 +2461,7 @@ PyObject *eEPGCache::search(ePyObject arg)
 	}
 	else
 	{
-		PyErr_SetString(PyExc_StandardError,
+		PyErr_SetString(PyExc_TypeError,
 			"type error");
 		eDebug("[eEPGCache] arg 0 is not a tuple");
 		return NULL;

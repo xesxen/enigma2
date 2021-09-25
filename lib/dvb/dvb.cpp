@@ -674,7 +674,7 @@ PyObject *eDVBResourceManager::setFrontendSlotInformations(ePyObject list)
 {
 	if (!PyList_Check(list))
 	{
-		PyErr_SetString(PyExc_StandardError, "eDVBResourceManager::setFrontendSlotInformations argument should be a python list");
+		PyErr_SetString(PyExc_TypeError, "eDVBResourceManager::setFrontendSlotInformations argument should be a python list");
 		return NULL;
 	}
 	unsigned int assigned=0;
@@ -691,9 +691,9 @@ PyObject *eDVBResourceManager::setFrontendSlotInformations(ePyObject list)
 			Enabled = PyTuple_GET_ITEM(obj, 2);
 			IsDVBS2 = PyTuple_GET_ITEM(obj, 3);
 			frontendId = PyTuple_GET_ITEM(obj, 4);
-			if (!PyInt_Check(Id) || !PyString_Check(Descr) || !PyBool_Check(Enabled) || !PyBool_Check(IsDVBS2) || !PyInt_Check(frontendId))
+			if (!PyLong_Check(Id) || !PyUnicode_Check(Descr) || !PyUnicode_READY(Descr) || PyUnicode_KIND(Descr) != PyUnicode_1BYTE_KIND || !PyBool_Check(Enabled) || !PyBool_Check(IsDVBS2) || !PyLong_Check(frontendId))
 				continue;
-			if (!i->m_frontend->setSlotInfo(PyInt_AsLong(Id), PyString_AS_STRING(Descr), Enabled == Py_True, IsDVBS2 == Py_True, PyInt_AsLong(frontendId)))
+			if (!i->m_frontend->setSlotInfo(PyLong_AsLong(Id), static_cast<const char*>(PyUnicode_DATA(Descr)), Enabled == Py_True, IsDVBS2 == Py_True, PyLong_AsLong(frontendId)))
 				continue;
 			++assigned;
 			break;
@@ -716,9 +716,10 @@ PyObject *eDVBResourceManager::setFrontendSlotInformations(ePyObject list)
 			Enabled = PyTuple_GET_ITEM(obj, 2);
 			IsDVBS2 = PyTuple_GET_ITEM(obj, 3);
 			frontendId = PyTuple_GET_ITEM(obj, 4);
-			if (!PyInt_Check(Id) || !PyString_Check(Descr) || !PyBool_Check(Enabled) || !PyBool_Check(IsDVBS2) || !PyInt_Check(frontendId))
+
+			if (!PyLong_Check(Id) || !PyUnicode_Check(Descr) || !PyUnicode_READY(Descr) || PyUnicode_KIND(Descr) != PyUnicode_1BYTE_KIND || !PyBool_Check(Enabled) || !PyBool_Check(IsDVBS2) || !PyLong_Check(frontendId))
 				continue;
-			if (!i->m_frontend->setSlotInfo(PyInt_AsLong(Id), PyString_AS_STRING(Descr), Enabled == Py_True, IsDVBS2 == Py_True, PyInt_AsLong(frontendId)))
+			if (!i->m_frontend->setSlotInfo(PyLong_AsLong(Id), static_cast<const char*>(PyUnicode_DATA(Descr)), Enabled == Py_True, IsDVBS2 == Py_True, PyLong_AsLong(frontendId)))
 				continue;
 			break;
 		}

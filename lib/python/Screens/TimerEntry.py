@@ -1,5 +1,5 @@
-from Screen import Screen
-import ChannelSelection
+from Screens.Screen import Screen
+import Screens.ChannelSelection
 from ServiceReference import ServiceReference
 from Components.config import config, ConfigSelection, ConfigText, ConfigSubList, ConfigDateTime, ConfigClock, ConfigYesNo, getConfigListEntry
 from Components.ActionMap import NumberActionMap
@@ -248,7 +248,7 @@ class TimerEntry(Screen, ConfigListScreen):
 		self[widget].l.setList(self.list)
 
 	def newConfig(self):
-		print "[TimerEdit] newConfig", self["config"].getCurrent()
+		print("[TimerEdit] newConfig", self["config"].getCurrent())
 		if self["config"].getCurrent() in (self.timerTypeEntry, self.timerJustplayEntry, self.frequencyEntry, self.entryShowEndTime, self.entryFallbackTimer):
 			self.createSetup("config")
 
@@ -314,7 +314,7 @@ class TimerEntry(Screen, ConfigListScreen):
 		if cur == self.channelEntry:
 			self.session.openWithCallback(
 				self.finishedChannelSelection,
-				ChannelSelection.SimpleChannelSelection,
+				Screens.ChannelSelection.SimpleChannelSelection,
 				_("Select channel to record from"),
 				currentBouquet=True
 			)
@@ -371,7 +371,7 @@ class TimerEntry(Screen, ConfigListScreen):
 	def selectChannelSelector(self, *args):
 		self.session.openWithCallback(
 				self.finishedChannelSelectionCorrection,
-				ChannelSelection.SimpleChannelSelection,
+				Screens.ChannelSelection.SimpleChannelSelection,
 				_("Select channel to record from")
 			)
 

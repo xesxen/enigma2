@@ -5,6 +5,7 @@ from Tools.KeyBindings import queryKeyBinding
 
 class ActionMap:
 	def __init__(self, contexts=None, actions=None, prio=0):
+		print(contexts, actions)
 		self.contexts = contexts or []
 		self.actions = actions or {}
 		self.prio = prio
@@ -12,14 +13,14 @@ class ActionMap:
 		self.bound = False
 		self.exec_active = False
 		self.enabled = True
-		unknown = self.actions.keys()
-		for action in unknown[:]:
-			for context in self.contexts:
-				if queryKeyBinding(context, action):
-					unknown.remove(action)
-					break
-		if unknown:
-			print "[ActionMap] Keymap(s) '%s' -> Undefined action(s) '%s'." % (", ".join(contexts), ", ".join(unknown))
+		unknown = [action for action in self.actions.keys() if not [queryKeyBinding(context, action) for context in self.contexts]]
+		# for action in unknown:
+		# 	for context in self.contexts:
+		# 		if queryKeyBinding(context, action):
+		# 			del self.actions[action]
+		# 			break
+		if self.actions.keys:
+			print("[ActionMap] Keymap(s) '%s' -> Undefined action(s) '%s'." % (", ".join(contexts), ", ".join(unknown)))
 
 	def setEnabled(self, enabled):
 		self.enabled = enabled
@@ -53,13 +54,13 @@ class ActionMap:
 
 	def action(self, context, action):
 		if action in self.actions:
-			print "[ActionMap] Keymap '%s' -> Action = '%s'." % (context, action)
+			print("[ActionMap] Keymap '%s' -> Action = '%s'." % (context, action))
 			res = self.actions[action]()
 			if res is not None:
 				return res
 			return 1
 		else:
-			print "[ActionMap] Keymap '%s' -> Unknown action '%s'! (Typo in keymap?)" % (context, action)
+			print("[ActionMap] Keymap '%s' -> Unknown action '%s'! (Typo in keymap?)" % (context, action))
 			return 0
 
 	def destroy(self):
@@ -94,7 +95,7 @@ class HelpableActionMap(ActionMap):
 		def exists(record):
 			for context in parent.helpList:
 				if record in context[2]:
-					print "[HelpActionMap] removed duplicity: %s %s" % (context[1], record)
+					print("[HelpActionMap] removed duplicity: %s %s" % (context[1], record))
 					return True
 			return False
 
@@ -105,7 +106,7 @@ class HelpableActionMap(ActionMap):
 		adict = {}
 		for context in contexts:
 			alist = []
-			for (action, funchelp) in actions.iteritems():
+			for (action, funchelp) in iter(actions.items()):
 				# Check if this is a tuple.
 				if isinstance(funchelp, tuple):
 					if queryKeyBinding(context, action):

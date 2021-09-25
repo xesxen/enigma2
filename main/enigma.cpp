@@ -113,15 +113,24 @@ class eMain: public eApplication, public sigc::trackable
 public:
 	eMain()
 	{
+        eWarning("[eMain] avahi");
 		e2avahi_init(this);
+        eWarning("[eMain] servicepeer");
 		init_servicepeer();
+        eWarning("[eMain] rl");
 		init.setRunlevel(eAutoInitNumbers::main);
 		/* TODO: put into init */
+        eWarning("[eMain] dvb");
 		m_dvbdb = new eDVBDB();
+        eWarning("[eMain] rm");
 		m_mgr = new eDVBResourceManager();
+        eWarning("[eMain] lth");
 		m_locale_time_handler = new eDVBLocalTimeHandler();
+        eWarning("[eMain] epgc");
 		m_epgcache = new eEPGCache();
+        eWarning("[eMain] epgtdr");
 		m_epgtransponderdatareader = new eEPGTransponderDataReader();
+        eWarning("[eMain] scl");
 		m_mgr->setChannelList(m_dvbdb);
 	}
 
@@ -207,17 +216,26 @@ int main(int argc, char **argv)
 	debugLvl = getenv("ENIGMA_DEBUG_LVL") ? atoi(getenv("ENIGMA_DEBUG_LVL")) : 3;
 	if (debugLvl < 0)
 		debugLvl = 0;
+
+    eWarning("[enigma] DEBUG = ?");
 	printf("ENIGMA_DEBUG_LVL=%d\n", debugLvl);
 	if (getenv("ENIGMA_DEBUG_TIME"))
 		setDebugTime(atoi(getenv("ENIGMA_DEBUG_TIME")) != 0);
 
+    eWarning("[enigma] python");
+
 	ePython python;
+    eWarning("[enigma] main");
 	eMain main;
+
+    eWarning("[enigma] my_dc");
 
 	ePtr<gMainDC> my_dc;
 	gMainDC::getInstance(my_dc);
 
 	//int double_buffer = my_dc->haveDoubleBuffering();
+
+    eWarning("[enigma] my_lcd_dc");
 
 	ePtr<gLCDDC> my_lcd_dc;
 	gLCDDC::getInstance(my_lcd_dc);
@@ -300,7 +318,9 @@ int main(int argc, char **argv)
 	/* start at full size */
 	eVideoWidget::setFullsize(true);
 
+    eLog(lvlInfo, "[MAIN] StartEnigma");
 	python.execFile(eEnv::resolve("${libdir}/enigma2/python/StartEnigma.py").c_str());
+    eLog(lvlInfo, "[MAIN] Python exited");
 
 	/* restore both decoders to full size */
 	eVideoWidget::setFullsize(true);
@@ -355,8 +375,8 @@ const char *getBoxType()
 void dump_malloc_stats(void)
 {
 #ifdef __GLIBC__
-	struct mallinfo mi = mallinfo();
-	eDebug("MALLOC: %d total", mi.uordblks);
+	struct mallinfo2 mi = mallinfo2();
+	eDebug("MALLOC: %zu total", mi.uordblks);
 #else
 	eDebug("MALLOC: info not exposed");
 #endif

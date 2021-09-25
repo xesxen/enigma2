@@ -1,4 +1,4 @@
-from Screen import Screen
+from Screens.Screen import Screen
 from Screens.TimerEdit import TimerSanityConflict
 from Screens.ChoiceBox import ChoiceBox
 from Components.ActionMap import ActionMap
@@ -12,7 +12,7 @@ from Components.Sources.StaticText import StaticText
 from Components.Sources.Event import Event
 from enigma import eEPGCache, eTimer, eServiceReference
 from RecordTimer import RecordTimerEntry, parseEvent, AFTEREVENT, createRecordTimerEntry
-from TimerEntry import TimerEntry
+from Screens.TimerEntry import TimerEntry
 from Plugins.Plugin import PluginDescriptor
 from Tools.BoundFunction import boundFunction
 from Tools.FallbackTimer import FallbackTimerList
@@ -169,7 +169,7 @@ class EventViewBase:
 						self.key_green_choice = self.ADD_TIMER
 
 	def finishedAdd(self, answer):
-		print "finished add"
+		print("finished add")
 		if answer[0]:
 			entry = answer[1]
 			if entry.external:
@@ -204,7 +204,7 @@ class EventViewBase:
 		else:
 			self["key_green"].setText(_("Add timer"))
 			self.key_green_choice = self.ADD_TIMER
-			print "Timeredit aborted"
+			print("Timeredit aborted")
 
 	def finishSanityCorrection(self, answer):
 		self.finishedAdd(answer)

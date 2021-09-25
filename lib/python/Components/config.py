@@ -180,6 +180,7 @@ def getKeyNumber(key):
 class choicesList(object):  # XXX: we might want a better name for this
 	LIST_TYPE_LIST = 1
 	LIST_TYPE_DICT = 2
+	type = 0
 
 	def __init__(self, choices, type=None):
 		self.choices = choices
@@ -189,7 +190,7 @@ class choicesList(object):  # XXX: we might want a better name for this
 			elif isinstance(choices, dict):
 				self.type = choicesList.LIST_TYPE_DICT
 			else:
-				assert False, "choices must be dict or list!"
+				assert(False, "choices must be dict or list!")
 		else:
 			self.type = type
 
@@ -243,15 +244,15 @@ class choicesList(object):  # XXX: we might want a better name for this
 			self.choices[value] = orig
 
 	def default(self):
-		choices = self.choices
-		if not choices:
-			return ""
+		default = None
+		if not self.choices:
+			return default
 		if self.type is choicesList.LIST_TYPE_LIST:
-			default = choices[0]
+			default = self.choices[0]
 			if isinstance(default, tuple):
 				default = default[0]
-		else:
-			default = choices.keys()[0]
+		elif self.type is choicesList.LIST_TYPE_DICT:
+			default = self.choices.keys()[0]
 		return default
 
 
@@ -1041,8 +1042,8 @@ class ConfigText(ConfigElement, NumericalTextInput):
 	def getValue(self):
 		try:
 			return self.text.encode("utf-8")
-		except UnicodeDecodeError:
-			print "Broken UTF8!"
+		except UnicodeDecodeError as a:
+			print("Broken UTF8!")
 			return self.text
 
 	def setValue(self, val):
@@ -1050,7 +1051,9 @@ class ConfigText(ConfigElement, NumericalTextInput):
 			self.text = val.decode("utf-8")
 		except UnicodeDecodeError:
 			self.text = val.decode("utf-8", "ignore")
-			print "Broken UTF8!"
+			print("Broken UTF8!")
+		except AttributeError:
+			self.text = val
 
 	value = property(getValue, setValue)
 	_value = property(getValue, setValue)
@@ -1872,7 +1875,7 @@ class Config(ConfigSubsection):
 			f.close()
 			os.rename(filename + ".writing", filename)
 		except IOError:
-			print "Config: Couldn't write %s" % filename
+			print("Config: Couldn't write %s" % filename)
 
 	def loadFromFile(self, filename, base_file=True):
 		self.unpickle(open(filename, "r"), base_file)
@@ -1888,8 +1891,8 @@ class ConfigFile:
 	def load(self):
 		try:
 			config.loadFromFile(self.CONFIG_FILE, True)
-		except IOError, e:
-			print "unable to load config (%s), assuming defaults..." % str(e)
+		except IOError as e:
+			print("unable to load config (%s), assuming defaults..." % str(e))
 
 	def save(self):
 		# config.save()
@@ -1911,7 +1914,7 @@ class ConfigFile:
 				ret = self.__resolveValue(names[1:], config.content.items)
 				if ret and len(ret) or ret == "":
 					return ret
-		print "getResolvedKey", key, "failed !! (Typo??)"
+		print("getResolvedKey", key, "failed !! (Typo??)")
 		return ""
 
 

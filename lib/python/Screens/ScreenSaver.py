@@ -7,7 +7,10 @@ import Screens.Standby
 from enigma import ePoint, eTimer, iPlayableService, eActionMap
 import os
 import random
-from sys import maxint
+try:
+	from sys import maxint
+except ImportError:
+	from sys import maxsize as maxint
 
 
 class InfoBarScreenSaver:

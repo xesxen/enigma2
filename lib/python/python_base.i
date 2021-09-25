@@ -273,13 +273,13 @@ eSocketNotifierPy_stop(eSocketNotifierPy* self)
 static PyObject *
 eSocketNotifierPy_get_fd(eSocketNotifierPy* self)
 {
-	return PyInt_FromLong(self->sn->getFD());
+	return PyLong_FromLong(self->sn->getFD());
 }
 
 static PyObject *
 eSocketNotifierPy_get_requested(eSocketNotifierPy* self)
 {
-	return PyInt_FromLong(self->sn->getRequested());
+	return PyLong_FromLong(self->sn->getRequested());
 }
 
 static PyObject *
@@ -347,13 +347,29 @@ static PyMethodDef base_module_methods[] = {
 	{}  /* Sentinel */
 };
 
-void eBaseInit(void)
+static PyModuleDef base_module = {
+        .m_base = PyModuleDef_HEAD_INIT,
+        .m_name = "eBaseImpl",
+        .m_doc = "Module that implements some enigma classes with working cyclic garbage collection.",
+        .m_size = -1,
+        .m_methods = base_module_methods
+};
+
+#if PY_VERSION_HEX >= 0x03000000
+PyObject*
+#else
+void
+#endif
+eBaseInit(void)
 {
-	PyObject* m = Py_InitModule3("eBaseImpl", base_module_methods,
-		"Module that implements some enigma classes with working cyclic garbage collection.");
+    PyObject* m = PyModule_Create(&base_module);
 
 	if (m == NULL)
-		return;
+#if PY_VERSION_HEX >= 0x03000000
+        return nullptr;
+#else
+        return;
+#endif
 
 	if (!PyType_Ready(&eTimerPyType))
 	{
@@ -365,6 +381,12 @@ void eBaseInit(void)
 		Org_Py_INCREF((PyObject*)&eSocketNotifierPyType);
 		PyModule_AddObject(m, "eSocketNotifier", (PyObject*)&eSocketNotifierPyType);
 	}
+
+#if PY_VERSION_HEX >= 0x03000000
+    return m;
+#else
+    return;
+#endif
 }
 }
 

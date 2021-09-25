@@ -2,9 +2,16 @@
                 /* avoid warnigs :) */
 #undef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200112L
-extern "C" void init_enigma();
-extern "C" void eBaseInit(void);
-extern "C" void eConsoleInit(void);
+#if PY_VERSION_HEX >= 0x03000000
+    extern "C" PyObject* PyInit__enigma();
+    extern "C" PyObject* eBaseInit(void);
+    extern "C" PyObject* eConsoleInit(void);
+#else
+    extern "C" void init_enigma();
+    extern "C" void eBaseInit(void);
+    extern "C" void eConsoleInit(void);
+#endif
+
 extern void bsodFatal(const char *component);
 extern void quitMainloop(int exitCode);
 
@@ -120,15 +127,34 @@ void ePyObject::decref(const char *file, int line)
 ePython::ePython()
 {
 //	Py_VerboseFlag = 1;
+    Py_UnbufferedStdioFlag=1;
+    Py_OptimizeFlag=0;
+    Py_DontWriteBytecodeFlag=1;
 
 //	Py_OptimizeFlag = 1;
 
-	Py_Initialize();
-	PyEval_InitThreads();
+#if PY_VERSION_HEX >= 0x03000000
+    if (PyImport_AppendInittab("_enigma", PyInit__enigma) != 0) {
+        eFatal("[ePython] PyImport_AppendInittab() failed");
+    }
+    if (PyImport_AppendInittab("eBaseImpl", eBaseInit) != 0) {
+        eFatal("[ePython] PyImport_AppendInittab() failed");
+    }
+    if (PyImport_AppendInittab("eConsoleImpl", eConsoleInit) != 0) {
+        eFatal("[ePython] PyImport_AppendInittab() failed");
+    }
+#endif
 
+	Py_Initialize();
+#if PY_VERSION_HEX < 0x03070000
+	PyEval_InitThreads();
+#endif
+
+#if PY_VERSION_HEX < 0x03000000
 	init_enigma();
 	eBaseInit();
 	eConsoleInit();
+#endif
 }
 
 ePython::~ePython()
@@ -144,7 +170,20 @@ int ePython::execFile(const char *file)
 		return -ENOENT;
 	int ret = PyRun_SimpleFile(fp, file);
 	fclose(fp);
-	return ret;
+
+//    if (PyErr_Occurred()) {
+        PyObject *ptype, *pvalue, *ptraceback;
+        PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+        if (pvalue) {
+            PyObject* utf = PyUnicode_AsUTF8String(pvalue);
+            char *buffer = PyBytes_AsString(utf);
+            eDebug("[ePython]: %s", buffer);
+        } else {
+            eDebug("[ePython]: no exception");
+        }
+//    }
+
+    return ret;
 }
 
 int ePython::execute(const std::string &pythonfile, const std::string &funcname)
@@ -169,7 +208,7 @@ int ePython::execute(const std::string &pythonfile, const std::string &funcname)
 			Py_DECREF(pArgs);
 			if (pValue)
 			{
-				printf("Result of call: %ld\n", PyInt_AsLong(pValue));
+				printf("Result of call: %ld\n", PyLong_AsLong(pValue));
 				Py_DECREF(pValue);
 			} else
 			{
@@ -196,8 +235,8 @@ int ePython::call(ePyObject pFunc, ePyObject pArgs)
 		pValue = PyObject_CallObject(pFunc, pArgs);
  		if (pValue)
 		{
-			if (PyInt_Check(pValue))
-				res = PyInt_AsLong(pValue);
+			if (PyLong_Check(pValue))
+				res = PyLong_AsLong(pValue);
 			else
 				res = 0;
 			Py_DECREF(pValue);
@@ -206,7 +245,7 @@ int ePython::call(ePyObject pFunc, ePyObject pArgs)
 		 	PyErr_Print();
 			ePyObject FuncStr = PyObject_Str(pFunc);
 			ePyObject ArgStr = PyObject_Str(pArgs);
-			eLog(lvlFatal, "[ePyObject] (CallObject(%s,%s) failed)", PyString_AS_STRING(FuncStr), PyString_AS_STRING(ArgStr));
+			eLog(lvlFatal, "[ePyObject] (CallObject(%s,%s) failed)", static_cast<const char*>(PyUnicode_DATA(FuncStr)), static_cast<const char*>(PyUnicode_DATA(ArgStr)));
 			Py_DECREF(FuncStr);
 			Py_DECREF(ArgStr);
 			/* immediately show BSOD, so we have the actual error at the bottom */

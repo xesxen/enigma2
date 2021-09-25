@@ -11,12 +11,12 @@ def getTunerDescription(nim):
 	try:
 		return nimmanager.getTerrestrialDescription(nim)
 	except:
-		print "[Transponder] nimmanager.getTerrestrialDescription(nim) failed, nim:", nim
+		print("[Transponder] nimmanager.getTerrestrialDescription(nim) failed, nim:", nim)
 		try:
-			print "[Transponder] trying use fallback", config.usage.remote_fallback_dvbt_region.value
+			print("[Transponder] trying use fallback", config.usage.remote_fallback_dvbt_region.value)
 			return config.usage.remote_fallback_dvbt_region.value
 		except:
-			print "[Transponder] no description"
+			print("[Transponder] no description")
 	return ""
 
 
@@ -256,7 +256,7 @@ def ConvertToHumanReadable(tp, tunertype=None):
 			eDVBFrontendParametersATSC.System_ATSC: "ATSC",
 			eDVBFrontendParametersATSC.System_DVB_C_ANNEX_B: "DVB-C ANNEX B"}.get(tp.get("system"))
 	elif tunertype != "None":
-		print "ConvertToHumanReadable: no or unknown tunertype in tpdata dict for tunertype:", tunertype
+		print("ConvertToHumanReadable: no or unknown tunertype in tpdata dict for tunertype:", tunertype)
 	for k, v in tp.items():
 		if k not in ret:
 			ret[k] = v

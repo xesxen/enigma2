@@ -22,7 +22,7 @@ public:
 
 inline PyObject *PyFrom(int v)
 {
-	return PyInt_FromLong(v);
+	return PyLong_FromLong(v);
 }
 
 inline PyObject *PyFrom(const char *c)
@@ -32,7 +32,7 @@ inline PyObject *PyFrom(const char *c)
 
 inline PyObject *PyFrom(std::pair<const char*, int>& p)
 {
-	return PyString_FromStringAndSize(p.first, p.second);
+	return PyUnicode_FromStringAndSize(p.first, p.second);
 }
 
 template <class R>

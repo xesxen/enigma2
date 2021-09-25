@@ -22,9 +22,9 @@ RESULT ePythonConfigQuery::getConfigValue(const char *key, std::string &value)
 		Py_DECREF(pArgs);
 		if (pRet)
 		{
-			if (PyString_Check(pRet))
+			if (PyUnicode_Check(pRet))
 			{
-				value.assign(PyString_AS_STRING(pRet));
+				value.assign(static_cast<const char*>(PyUnicode_DATA(pRet)));
 				Py_DECREF(pRet);
 				return 0;
 			}

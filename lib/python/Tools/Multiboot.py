@@ -15,7 +15,7 @@ def getMultibootStartupDevice():
 		if os.path.exists(device):
 			Console().ePopen('mount %s %s' % (device, tmp.dir))
 			if os.path.isfile(os.path.join(tmp.dir, "STARTUP")):
-				print '[Multiboot] Startupdevice found:', device
+				print('[Multiboot] Startupdevice found:', device)
 				return device
 			Console().ePopen('umount %s' % tmp.dir)
 	if not os.path.ismount(tmp.dir):
@@ -56,7 +56,7 @@ def getMultibootslots():
 			#the boot device has ancient content and does not contain the correct STARTUP files
 			for slot in range(1, 5):
 				bootslots[slot] = {'device': '/dev/mmcblk0p%s' % (slot * 2 + 1), 'startupfile': None}
-	print '[Multiboot] Bootslots found:', bootslots
+	print('[Multiboot] Bootslots found:', bootslots)
 	return bootslots
 
 

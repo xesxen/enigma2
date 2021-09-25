@@ -80,7 +80,7 @@ void eActionMap::unbindAction(const std::string &context, ePyObject function)
 {
 	//eDebug("[eActionMap] unbind function from %s", context.c_str());
 	for (std::multimap<int64_t, eActionBinding>::iterator i(m_bindings.begin()); i != m_bindings.end(); ++i)
-		if (i->second.m_fnc && (PyObject_Compare(i->second.m_fnc, function) == 0))
+		if (i->second.m_fnc && (PyObject_RichCompareBool(i->second.m_fnc, function, Py_EQ) == 1))
 		{
 			Py_DECREF(i->second.m_fnc);
 			m_bindings.erase(i);
@@ -289,8 +289,8 @@ void eActionMap::keyPressed(const std::string &device, int key, int flags)
 			{
 				//eDebug("[eActionMap]   python wildcard.");
 				ePyObject pArgs = PyTuple_New(2);
-				PyTuple_SET_ITEM(pArgs, 0, PyInt_FromLong(key));
-				PyTuple_SET_ITEM(pArgs, 1, PyInt_FromLong(flags));
+				PyTuple_SET_ITEM(pArgs, 0, PyLong_FromLong(key));
+				PyTuple_SET_ITEM(pArgs, 1, PyLong_FromLong(flags));
 				Py_INCREF(c->second.m_fnc);
 				call_list.push_back(call_entry(c->second.m_fnc, pArgs));
 			}

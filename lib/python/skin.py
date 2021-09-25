@@ -126,15 +126,23 @@ def loadSkin(filename, scope=SCOPE_SKIN, desktop=getDesktop(GUI_SKIN_ID), screen
 	filename = resolveFilename(scope, filename)
 	print("[Skin] Loading skin file '%s'." % filename)
 	try:
+		print("!=1")
+		print(filename)
 		with open(filename, "r") as fd:  # This open gets around a possible file handle leak in Python's XML parser.
+			print('===')
 			try:
 				domSkin = xml.etree.cElementTree.parse(fd).getroot()
 				# print("[Skin] DEBUG: Extracting non screen blocks from '%s'.  (scope='%s')" % (filename, scope))
 				# For loadSingleSkinData colors, bordersets etc. are applied one after
 				# the other in order of ascending priority.
+				print('010')
+				print(desktop, screenID, domSkin, filename)
 				loadSingleSkinData(desktop, screenID, domSkin, filename, scope=scope)
+				print('a')
 				for element in domSkin:
+					print('b', element)
 					if element.tag == "screen":  # Process all screen elements.
+						print(1)
 						name = element.attrib.get("name", None)
 						if name:  # Without a name, it's useless!
 							scrnID = element.attrib.get("id", None)
@@ -142,6 +150,7 @@ def loadSkin(filename, scope=SCOPE_SKIN, desktop=getDesktop(GUI_SKIN_ID), screen
 								# print("[Skin] DEBUG: Extracting screen '%s' from '%s'.  (scope='%s')" % (name, filename, scope))
 								domScreens[name] = (element, "%s/" % dirname(filename))
 					elif element.tag == "windowstyle":  # Process the windowstyle element.
+						print(2)
 						scrnID = element.attrib.get("id", None)
 						if scrnID is not None:  # Without an scrnID, it is useless!
 							scrnID = int(scrnID)
@@ -150,7 +159,9 @@ def loadSkin(filename, scope=SCOPE_SKIN, desktop=getDesktop(GUI_SKIN_ID), screen
 							domStyle.getroot().append(element)
 							windowStyles[scrnID] = (desktop, screenID, domStyle, filename, scope)
 					# Element is not a screen or windowstyle element so no need for it any longer.
+				print('c')
 				reloadWindowStyles()  # Reload the window style to ensure all skin changes are taken into account.
+				print('d')
 				print("[Skin] Loading skin file '%s' complete." % filename)
 				if runCallbacks:
 					for method in self.callbacks:
@@ -313,7 +324,7 @@ def parsePosition(s, scale, object=None, desktop=None, size=None):
 
 
 def parseSize(s, scale, object=None, desktop=None):
-	return eSize(*[max(0, x) for x in parseValuePair(s, scale, object, desktop)])
+	return eSize(*[int(max(0, x)) for x in parseValuePair(s, scale, object, desktop)])
 
 
 def parseFont(s, scale=((1, 1), (1, 1))):
@@ -424,7 +435,9 @@ def collectAttributes(skinAttributes, node, context, skinPath=None, ignore=(), f
 			else:
 				skinAttributes.append((attrib, value.encode("utf-8")))
 	if pos is not None:
+		print('-=-', pos, size, font)
 		pos, size = context.parse(pos, size, font)
+		print(pos, size)
 		skinAttributes.append(("position", pos))
 	if size is not None:
 		skinAttributes.append(("size", size))
@@ -438,12 +451,18 @@ class AttributeParser:
 
 	def applyOne(self, attrib, value):
 		try:
+			value = value.decode()
+		except (UnicodeDecodeError, AttributeError):
+			pass
+
+		try:
 			getattr(self, attrib)(value)
 		except AttributeError:
 			print("[Skin] Attribute '%s' (with value of '%s') in object of type '%s' is not implemented!" % (attrib, value, self.guiObject.__class__.__name__))
 		except SkinError as err:
 			print("[Skin] Error: %s" % str(err))
-		except Exception:
+		except Exception as e:
+			print(e)
 			print("[Skin] Attribute '%s' with wrong (or unknown) value '%s' in object of type '%s'!" % (attrib, value, self.guiObject.__class__.__name__))
 
 	def applyAll(self, attrs):
@@ -696,16 +715,25 @@ def applyAllAttributes(guiObject, desktop, attributes, scale):
 
 
 def reloadWindowStyles():
+	print(windowStyles)
 	for screenID in windowStyles:
+		print('x1')
 		desktop, screenID, domSkin, pathSkin, scope = windowStyles[screenID]
-		loadSingleSkinData(desktop, screenID, domSkin, pathSkin, scope)
+		print('x2', domSkin, domSkin.getroot())
+		loadSingleSkinData(desktop, screenID, domSkin.getroot(), pathSkin, scope)
+		print('x3')
 
 
 def loadSingleSkinData(desktop, screenID, domSkin, pathSkin, scope=SCOPE_CURRENT_SKIN):
 	"""Loads skin data like colors, windowstyle etc."""
+	import traceback
+	traceback.print_stack()
+	print(domSkin)
 	assert domSkin.tag == "skin", "root element in skin must be 'skin'!"
 	global colors, fonts, menus, parameters, setups, switchPixmap
+	print('a')
 	for tag in domSkin.findall("output"):
+		print('b', tag)
 		scrnID = int(tag.attrib.get("id", GUI_SKIN_ID))
 		if scrnID == GUI_SKIN_ID:
 			for res in tag.findall("resolution"):
@@ -772,14 +800,17 @@ def loadSingleSkinData(desktop, screenID, domSkin, pathSkin, scope=SCOPE_CURRENT
 				parameters["PartnerBoxTimerServicename"] = applySkinFactor(0, 0, 30)
 				parameters["SHOUTcastListItem"] = applySkinFactor(20, 18, 22, 69, 20, 23, 43, 22)
 
+	print('q')
 	for tag in domSkin.findall("include"):
 		filename = tag.attrib.get("filename")
 		if filename:
+			print(filename)
 			filename = resolveFilename(scope, filename, path_prefix=pathSkin)
 			if isfile(filename):
 				loadSkin(filename, scope=scope, desktop=desktop, screenID=screenID)
 			else:
 				raise SkinError("Included file '%s' not found" % filename)
+	print('x')
 	for tag in domSkin.findall("switchpixmap"):
 		for pixmap in tag.findall("pixmap"):
 			name = pixmap.attrib.get("name")
@@ -793,6 +824,7 @@ def loadSingleSkinData(desktop, screenID, domSkin, pathSkin, scope=SCOPE_CURRENT
 				switchPixmap[name] = LoadPixmap(resolved, cached=True)
 			else:
 				raise SkinError("The switchpixmap pixmap filename='%s' (%s) not found" % (filename, resolved))
+	print('y')
 	for tag in domSkin.findall("colors"):
 		for color in tag.findall("color"):
 			name = color.attrib.get("name")
@@ -802,6 +834,7 @@ def loadSingleSkinData(desktop, screenID, domSkin, pathSkin, scope=SCOPE_CURRENT
 				# print("[Skin] DEBUG: Color name='%s', color='%s'." % (name, color))
 			else:
 				raise SkinError("Tag 'color' needs a name and color, got name='%s' and color='%s'" % (name, color))
+	print('z')
 	for tag in domSkin.findall("fonts"):
 		for font in tag.findall("font"):
 			filename = font.attrib.get("filename", "<NONAME>")
@@ -814,7 +847,10 @@ def loadSingleSkinData(desktop, screenID, domSkin, pathSkin, scope=SCOPE_CURRENT
 				render = int(render)
 			else:
 				render = 0
+			print('?')
+			print(SCOPE_FONTS, filename)
 			filename = resolveFilename(SCOPE_FONTS, filename, path_prefix=pathSkin)
+			print(filename)
 			if isfile(filename):
 				addFont(filename, name, scale, isReplacement, render)
 				# Log provided by C++ addFont code.
@@ -837,6 +873,7 @@ def loadSingleSkinData(desktop, screenID, domSkin, pathSkin, scope=SCOPE_CURRENT
 				# print("[Skin] Add font alias: name='%s', font='%s', size=%d, height=%s, width=%d." % (name, font, size, height, width))
 			except Exception as err:
 				raise SkinError("Bad font alias: '%s'" % str(err))
+	print('u')
 	for tag in domSkin.findall("parameters"):
 		for parameter in tag.findall("parameter"):
 			try:
@@ -845,6 +882,7 @@ def loadSingleSkinData(desktop, screenID, domSkin, pathSkin, scope=SCOPE_CURRENT
 				parameters[name] = map(parseParameter, [x.strip() for x in value.split(",")]) if "," in value else parseParameter(value)
 			except Exception as err:
 				raise SkinError("Bad parameter: '%s'" % str(err))
+	print('v')
 	for tag in domSkin.findall("menus"):
 		for setup in tag.findall("menu"):
 			key = setup.attrib.get("key")
@@ -854,6 +892,7 @@ def loadSingleSkinData(desktop, screenID, domSkin, pathSkin, scope=SCOPE_CURRENT
 				# print("[Skin] DEBUG: Menu key='%s', image='%s'." % (key, image))
 			else:
 				raise SkinError("Tag menu needs key and image, got key='%s' and image='%s'" % (key, image))
+	print('w')
 	for tag in domSkin.findall("setups"):
 		for setup in tag.findall("setup"):
 			key = setup.attrib.get("key")
@@ -975,6 +1014,17 @@ class SkinContext:
 		return "Context (%s,%s)+(%s,%s) " % (self.x, self.y, self.w, self.h)
 
 	def parse(self, pos, size, font):
+		try:
+			pos = pos.decode()
+		except (UnicodeDecodeError, AttributeError):
+			pass
+		try:
+			size = size.decode()
+		except (UnicodeDecodeError, AttributeError):
+			pass
+
+
+		print('aaadada', pos, size, font)
 		if pos == "fill":
 			pos = (self.x, self.y)
 			size = (self.w, self.h)
@@ -1013,10 +1063,15 @@ class SkinContext:
 #
 class SkinContextStack(SkinContext):
 	def parse(self, pos, size, font):
+		if not isinstance(pos, str):
+			pos = pos.decode()
 		if pos == "fill":
 			pos = (self.x, self.y)
 			size = (self.w, self.h)
 		else:
+			print(size)
+			if not isinstance(size, str):
+				size = size.decode()
 			w, h = size.split(",")
 			w = parseCoordinate(w, self.w, 0, font)
 			h = parseCoordinate(h, self.h, 0, font)
@@ -1034,6 +1089,8 @@ class SkinContextStack(SkinContext):
 				size = (w, self.h)
 			else:
 				size = (w, h)
+				if not isinstance(pos, str):
+					pos = pos.decode()
 				pos = pos.split(",")
 				pos = (self.x + parseCoordinate(pos[0], self.w, size[0], font), self.y + parseCoordinate(pos[1], self.h, size[1], font))
 		return (SizeTuple(pos), SizeTuple(size))
@@ -1156,8 +1213,10 @@ def readSkin(screen, skin, names, desktop):
 					parms = ""
 				# print("[Skin] DEBUG: Params='%s'." % parms)
 				try:
+					print("Load", ".".join(("Components", "Converter", ctype)))
 					converterClass = my_import(".".join(("Components", "Converter", ctype))).__dict__.get(ctype)
-				except ImportError:
+				except ImportError as a:
+					print(a)
 					raise SkinError("Converter '%s' not found" % ctype)
 				c = None
 				for i in source.downstream_elements:
@@ -1204,7 +1263,7 @@ def readSkin(screen, skin, names, desktop):
 		screen.additionalWidgets.append(w)
 
 	def processScreen(widget, context):
-		for w in widget.getchildren():
+		for w in list(widget):
 			conditional = w.attrib.get("conditional")
 			if conditional and not [i for i in conditional.split(",") if i in screen.keys()]:
 				continue

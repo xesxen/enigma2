@@ -70,7 +70,7 @@ class Screen(dict):
 					return
 			# assert self.session is None, "a screen can only exec once per time"
 			# self.session = session
-			for val in self.values() + self.renderer:
+			for val in list(self.values()) + self.renderer:
 				val.execBegin()
 				# DEBUG: if not self.standAlone and self.session.current_dialog != self:
 				if not self.stand_alone and self.session.current_dialog != self:
@@ -126,7 +126,7 @@ class Screen(dict):
 		self.instance.show()
 		for x in self.onShow:
 			x()
-		for val in self.values() + self.renderer:
+		for val in list(self.values()) + self.renderer:
 			if isinstance(val, GUIComponent) or isinstance(val, Source):
 				val.onShow()
 
@@ -154,6 +154,7 @@ class Screen(dict):
 					if self.session and len(screenclasses) > index:
 						self.screenPath = " > ".join(ds[0].getTitle() for ds in self.session.dialog_stack[index:])
 			if self.instance:
+				print(title)
 				self.instance.setTitle(title)
 			self.summaries.setTitle(title)
 		except AttributeError:
@@ -234,7 +235,7 @@ class Screen(dict):
 		else:
 			for attribute in self.skinAttributes:
 				if attribute[0] == "title":
-					self.setTitle(_(attribute[1]))
+					self.setTitle(_(attribute[1].decode()))
 		self.skinAttributes.sort(key=lambda a: {"position": 1}.get(a[0], 0))  # We need to make sure that certain attributes come last.
 		applyAllAttributes(self.instance, self.desktop, self.skinAttributes, self.scale)
 		self.createGUIScreen(self.instance, self.desktop)
@@ -265,8 +266,8 @@ class Screen(dict):
 			applyAllAttributes(w.instance, desktop, w.skinAttributes, self.scale)
 		for f in self.onLayoutFinish:
 			if not isinstance(f, type(self.close)):
-				exec f in globals(), locals()  # Python 2
-				# exec(f, globals(), locals())  # Python 3
+				# exec f in globals(), locals()  # Python 2
+				exec(f, globals(), locals())  # Python 3
 			else:
 				f()
 

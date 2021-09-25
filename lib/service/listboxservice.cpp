@@ -891,11 +891,11 @@ void eListboxServiceContent::paint(gPainter &painter, eWindowStyle &style, const
 						Py_DECREF(pArgs);
 						if (pRet)
 						{
-							if (PyString_Check(pRet))
+							if (PyUnicode_Check(pRet))
 							{
-								std::string piconFilename = PyString_AS_STRING(pRet);
-								if (!piconFilename.empty())
-									loadImage(piconPixmap, piconFilename.c_str());
+								const char* piconFilename = static_cast<const char*>(PyUnicode_DATA(pRet));
+								if (*piconFilename)
+									loadImage(piconPixmap, piconFilename);
 							}
 							Py_DECREF(pRet);
 						}

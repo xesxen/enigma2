@@ -35,6 +35,11 @@ def getKeyId(id):
 
 
 def parseKeys(context, filename, actionmap, device, keys):
+	try:
+		filename = filename.decode()
+	except AttributeError:
+		pass
+
 	for x in keys.findall("key"):
 		get_attr = x.attrib.get
 		mapto = get_attr("mapto")
@@ -51,11 +56,17 @@ def parseKeys(context, filename, actionmap, device, keys):
 
 		keyid = getKeyId(id)
 #				print "[keymapparser] " + context + "::" + mapto + " -> " + device + "." + hex(keyid)
+		print(filename, device, keyid, flags, context, mapto)
 		actionmap.bindKey(filename, device, keyid, flags, context, mapto)
 		addKeyBinding(filename, keyid, context, mapto, flags)
 
 
 def parseTrans(filename, actionmap, device, keys):
+	try:
+		filename = filename.decode()
+	except AttributeError:
+		pass
+
 	for x in keys.findall("toggle"):
 		get_attr = x.attrib.get
 		toggle_key = get_attr("from")
@@ -73,6 +84,7 @@ def parseTrans(filename, actionmap, device, keys):
 		keyin = getKeyId(keyin)
 		keyout = getKeyId(keyout)
 		toggle = int(toggle)
+		print(filename, device, keyin, keyout, toggle)
 		actionmap.bindTranslation(filename, device, keyin, keyout, toggle)
 
 
@@ -81,9 +93,14 @@ def readKeymap(filename):
 	assert p
 
 	try:
+		filename = filename.decode()
+	except AttributeError:
+		pass
+
+	try:
 		source = open(filename)
 	except:
-		print "[keymapparser] keymap file " + filename + " not found"
+		print("[keymapparser] keymap file " + filename + " not found")
 		return
 
 	try:

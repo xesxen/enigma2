@@ -1,14 +1,16 @@
 from Components.Harddisk import harddiskmanager
 from Components.Console import Console
-from config import ConfigSubsection, ConfigYesNo, config, ConfigSelection, ConfigText, ConfigNumber, ConfigSet, ConfigLocations, ConfigSelectionNumber, ConfigClock, ConfigSlider, ConfigEnableDisable, ConfigSubDict, ConfigDictionarySet, ConfigInteger, ConfigPassword
+from .config import ConfigSubsection, ConfigYesNo, config, ConfigSelection, ConfigText, ConfigNumber, ConfigSet, ConfigLocations, ConfigSelectionNumber, ConfigClock, ConfigSlider, ConfigEnableDisable, ConfigSubDict, ConfigDictionarySet, ConfigInteger, ConfigPassword
 from Tools.Directories import defaultRecordingLocation
 from enigma import setTunerTypePriorityOrder, setPreferredTuner, setSpinnerOnOff, setEnableTtCachingOnOff, eEnv, eDVBDB, Misc_Options, eBackgroundFileEraser, eServiceEvent, eDVBLocalTimeHandler, eEPGCache
 from Components.About import GetIPsFromNetworkInterfaces
 from Components.NimManager import nimmanager
 from Components.ServiceList import refreshServiceList
-from SystemInfo import SystemInfo
+from .SystemInfo import SystemInfo
 import os
 import time
+from gettext import ngettext
+from itertools import chain
 
 
 def InitUsageConfig():
@@ -193,7 +195,7 @@ def InitUsageConfig():
 	config.usage.sleep_timer = ConfigSelection(default="0", choices=choicelist)
 
 	choicelist = [("0", _("Disabled"))]
-	for i in [300, 600] + range(900, 14401, 900):
+	for i in chain([300, 600], range(900, 14401, 900)):
 		m = abs(i / 60)
 		m = ngettext("%d minute", "%d minutes", m) % m
 		choicelist.append((str(i), _("after ") + m))

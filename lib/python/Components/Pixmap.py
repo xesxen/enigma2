@@ -1,5 +1,5 @@
-from ConditionalWidget import ConditionalWidget
-from GUIComponent import GUIComponent
+from .ConditionalWidget import ConditionalWidget
+from .GUIComponent import GUIComponent
 
 from enigma import ePixmap, eTimer
 
@@ -101,6 +101,10 @@ class MultiPixmap(Pixmap):
 			attribs = []
 			for (attrib, value) in self.skinAttributes:
 				if attrib == "pixmaps":
+					try:
+						value = value.decode()
+					except (UnicodeDecodeError, AttributeError):
+						pass
 					pixmaps = value.split(',')
 					for p in pixmaps:
 						self.pixmaps.append(loadPixmap(resolveFilename(SCOPE_CURRENT_SKIN, p, path_prefix=skin_path_prefix), desktop))
@@ -120,4 +124,4 @@ class MultiPixmap(Pixmap):
 			if len(self.pixmaps) > x:
 				self.instance.setPixmap(self.pixmaps[x])
 			else:
-				print "setPixmapNum(%d) failed! defined pixmaps:" % (x), self.pixmaps
+				print("setPixmapNum(%d) failed! defined pixmaps:" % (x), self.pixmaps)
